@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.library'
+    id 'maven-publish'
     id 'org.jetbrains.kotlin.android'
 }
 
@@ -64,4 +65,16 @@ dependencies {
 
     // Coroutine Image Loader - COIL
     implementation "io.coil-kt:coil:$coil_version"
+}
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.dsofttech.softCam'
+                artifactId = 'softCam'
+                version = '1.0.0'
+            }
+        }
+    }
 }
