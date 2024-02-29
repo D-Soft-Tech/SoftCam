@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">SoftCam</string>
+    <string name="capture">Capture</string>
+    <string name="switch_camera">Switch camera</string>
+    <string name="permission_declined">Permission Declined</string>
+    <string name="photo_capture_failed">Photo capture Failed!</string>
+    <string name="photo_captured">Photo captured!</string>
+    <string name="video_capture_failed">Video capture failed</string>
+    <string name="stop_capture">Stop video recording</string>
+    <string name="start_capture">Start video recording</string>
+    <string name="mouth_not_present">Mouth not detected in image, kindly focus on a real human</string>
+    <string name="mouth">"Mouth, "</string>
+    <string name="ear">"Ear, "</string>
+    <string name="eye">"Eyes, "</string>
+    <string name="cheeks">"Cheeks, "</string>
+    <string name="nose">Nose</string>
+    <string name="and">"and "</string>
+    <string name="focus_on_real_human">%1s not found. \\nKindly focus on a real human.</string>
+    <string name="kindly_smile">Kindly Smile a bit.</string>
+    <string name="kindly_open_your_eyes">Kindly open your eyes</string>
+    <string name="no_face_detected">No face detected! \\nKindly focus on a real human.</string>
+</resources>

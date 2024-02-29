@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">CameraXApp</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="start_capture">Start Capture</string>
+    <string name="stop_capture">Stop Capture</string>
+    <string name="permission_declined">Permission declined</string>
+    <string name="photo_capture_failed">Photo capture failed!</string>
+    <string name="photo_captured">Photo capture succeeded: %1s</string>
+    <string name="start_camera">Start Camera</string>
+    <string name="captured_photo_will_appear_here">Captured photo will appear here</string>
+    <string name="permission_accepted">Permissions accepted</string>
+</resources>

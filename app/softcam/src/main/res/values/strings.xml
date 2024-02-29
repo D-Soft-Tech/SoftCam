@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">SoftCam</string>
+    <string name="capture_image" translatable="false" tools:ignore="ExtraTranslation">Capture</string>
+</resources>
