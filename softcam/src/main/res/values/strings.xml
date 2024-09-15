@@ -19,4 +19,5 @@
     <string name="kindly_smile">Kindly Smile a bit.</string>
     <string name="kindly_open_your_eyes">Kindly open your eyes</string>
     <string name="no_face_detected">No face detected! \\nKindly focus on a real human.</string>
+    <string name="info">Info</string>
 </resources>

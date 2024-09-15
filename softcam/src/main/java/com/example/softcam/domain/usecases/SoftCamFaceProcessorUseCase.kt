@@ -2,7 +2,6 @@ package com.example.softcam.domain.usecases
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
@@ -20,7 +19,8 @@ internal typealias FaceDetectionUseCaseCallBack = () -> Unit
 internal class SoftCamFaceProcessorUseCase(
     private val faceBoxOverlay: FaceBoxOverlay,
     private val context: Context,
-    private val callBack: FaceDetectionUseCaseCallBack
+    private val logErrorMessageToUserAction: (message: String) -> Unit,
+    private val callBack: FaceDetectionUseCaseCallBack,
 ) : SoftCamFaceProcessor {
     // High-accuracy landmark detection and face classification
     private val faceDetectorOptions = FaceDetectorOptions.Builder()
@@ -42,11 +42,9 @@ internal class SoftCamFaceProcessorUseCase(
                 processFace(faces, imageProxy)
             }
             .addOnFailureListener { exception ->
-                Toast.makeText(
-                    context,
+                logErrorMessageToUserAction.invoke(
                     context.getString(R.string.no_face_detected),
-                    Toast.LENGTH_SHORT
-                ).show()
+                )
                 exception.localizedMessage?.let { Log.d("FACE_PROCESSING_ERROR", it) }
             }
             .addOnCompleteListener {
@@ -79,7 +77,7 @@ internal class SoftCamFaceProcessorUseCase(
     /**
      * Checks if the user's eyes are opened or not
      *
-     * @param [context] This is used to make a toast to the UI in the case that user's eye(s) is/are not opened
+     * @param [context] This is used to extract the appropriate error message from string resource in the case that user's eye(s) is/are not opened
      * @param [face] The supplied image on which this check is to be carried out
      *
      * @return [Boolean] True if both eyes are opened otherwise False
@@ -96,33 +94,28 @@ internal class SoftCamFaceProcessorUseCase(
         } ?: run { onEyesNotOpened(context) }
 
     private fun onEyesNotOpened(context: Context): Boolean {
-        Toast.makeText(
-            context,
-            context.getString(R.string.kindly_open_your_eyes),
-            Toast.LENGTH_SHORT
-        ).show()
+        logErrorMessageToUserAction.invoke(
+            context.getString(R.string.kindly_open_your_eyes)
+        )
         return false
     }
 
     /**
      * Checks if the user is smiling or not
      *
-     * @param[context] Used to make a toast to UI in the case that the user being focused is not smiling
+     * @param[context] This is used to extract the appropriate error message from string resource in the case that the user being focused is not smiling
      * @param[face] The face being focused on which the check is to be performed
      *
      * @return [Boolean] True if the focused face is smiling otherwise False
      * */
     private fun isFaceSmiling(context: Context, face: Face): Boolean =
         face.smilingProbability?.let {
-            if (it < 0.5) Toast.makeText(
-                context,
+            if (it < 0.5) logErrorMessageToUserAction.invoke(
                 context.getString(R.string.kindly_smile),
-                Toast.LENGTH_SHORT
-            ).show()
+            )
             it >= 0.5
         } ?: run {
-            Toast.makeText(context, context.getString(R.string.kindly_smile), Toast.LENGTH_SHORT)
-                .show()
+            logErrorMessageToUserAction.invoke(context.getString(R.string.kindly_smile))
             false
         }
 
@@ -131,7 +124,7 @@ internal class SoftCamFaceProcessorUseCase(
      * Returns true if the face passed to it is a human face otherwise false.
      * Human is detected if the mouth, ears, eyes, cheeks and nose landmarks are available
      *
-     * @param context This is used to send a toast message to the UI component in case of failure to detect a land mark
+     * @param context This is used to extract the appropriate error message from string resource in case of failure to detect a land mark
      * @param [face] The face on which the above mentioned landmarks are to be detected
      *
      * @return [Boolean] Whether a human is detected or not.
@@ -179,7 +172,7 @@ internal class SoftCamFaceProcessorUseCase(
      * Returns true if the face passed to it is a human face otherwise false.
      * Human is detected if the mouth, ears, eyes, cheeks and nose contour are available
      *
-     * @param context This is used to send a toast message to the UI component in case of failure to detect a contour
+     * @param context This is used to extract the appropriate error message from string resource in case of failure to detect a contour
      * @param [face] The face on which the above mentioned contour are to be detected
      *
      * @return [Boolean] Whether a human is detected or not.

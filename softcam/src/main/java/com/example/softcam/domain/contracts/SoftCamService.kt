@@ -11,7 +11,6 @@ import android.util.Log
 import android.view.OrientationEventListener
 import android.view.Surface
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -33,7 +32,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.net.toFile
 import androidx.lifecycle.LifecycleOwner
-import coil.load
 import com.example.softcam.R
 import com.example.softcam.domain.models.SoftCamCameraType
 import com.example.softcam.domain.models.SoftCamUseCase
@@ -55,7 +53,8 @@ internal class SoftCamService(
     private val imageCaptureCallBack: SoftCamImageCaptureCallBack,
     private var imageCapture: ImageCapture? = null,
     private var videoCapture: VideoCapture<Recorder>? = null,
-    private var recording: Recording? = null
+    private var recording: Recording? = null,
+    private val logErrorMessageAction: (message: String) -> Unit
 ) : SoftCamServiceContract {
     override fun startCamera(useCase: SoftCamUseCase, cameraType: SoftCamCameraType) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -144,11 +143,7 @@ internal class SoftCamService(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun takePhoto() {
         val imageCapture = imageCapture ?: run {
-            Toast.makeText(
-                context,
-                context.getString(R.string.photo_capture_failed),
-                Toast.LENGTH_SHORT
-            ).show()
+            logErrorMessageAction(context.getString(R.string.photo_capture_failed))
             return
         }
 
@@ -191,22 +186,13 @@ internal class SoftCamService(
 
                 override fun onError(exception: ImageCaptureException) {
                     exception.localizedMessage?.let { imageCaptureCallBack.onError(it) }
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.photo_capture_failed),
-                        Toast.LENGTH_SHORT
-                    ).show()
                 }
             })
     }
 
     override fun takeVideo() {
         val videoCapture = this.videoCapture ?: run {
-            Toast.makeText(
-                context,
-                context.getString(R.string.video_capture_failed),
-                Toast.LENGTH_SHORT
-            ).show()
+            logErrorMessageAction(context.getString(R.string.video_capture_failed))
             return
         }
 
@@ -260,8 +246,7 @@ internal class SoftCamService(
                         if (!recordEvent.hasError()) {
                             val msg = "Video capture succeeded: " +
                                     "${recordEvent.outputResults.outputUri}"
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT)
-                                .show()
+                            logErrorMessageAction(msg)
                             Log.d(SOFT_CAM_TAG, msg)
                         } else {
                             recording?.close()

@@ -6,13 +6,16 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.view.PreviewView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.example.softcam.R
 import com.example.softcam.databinding.SoftcamActivityBinding
 import com.example.softcam.domain.contracts.SoftCamFaceProcessor
@@ -25,8 +28,19 @@ import com.example.softcam.domain.usecases.FaceBoxOverlay
 import com.example.softcam.domain.usecases.SoftCamFaceProcessorUseCase
 import com.example.softcam.domain.usecases.SoftCamImageAnalyzer
 import com.example.softcam.utils.AppConstants.REQUIRED_PERMISSIONS
+import com.example.softcam.utils.Extensions.slideDown
+import com.example.softcam.utils.Extensions.slideUp
 import com.example.softcam.utils.SoftCam.SOFT_CAM_RESULT_KEY
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -41,8 +55,15 @@ internal class SoftCamActivity : AppCompatActivity(), SoftCamImageCaptureCallBac
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var imageAnalyzer: SoftCamImageAnalyzer
     private lateinit var softCamFaceProcessor: SoftCamFaceProcessor
+    private lateinit var infoLayout: ConstraintLayout
+    private lateinit var infoTv: TextView
+    private lateinit var coroutineScope: CoroutineScope
 
     private var cameraTypeIsSelfie: Boolean = true
+
+    private val _errorMessageSharedFlow: MutableSharedFlow<String> = MutableSharedFlow(replay = 0)
+    private val errorMessageSharedFlow: SharedFlow<String> get() = _errorMessageSharedFlow
+    private var lastMessage: String? = null
 
     private val cameraPermissionRequestLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -79,10 +100,20 @@ internal class SoftCamActivity : AppCompatActivity(), SoftCamImageCaptureCallBac
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.softcam_activity)
         initViews()
-        softCamFaceProcessor = SoftCamFaceProcessorUseCase(faceOverLay, this) {
+        coroutineScope = CoroutineScope(Dispatchers.Default + Job())
+
+        softCamFaceProcessor = SoftCamFaceProcessorUseCase(
+            faceOverLay,
+            this,
+            logErrorMessageToUserAction = {
+                logErrorMessageAction(it)
+            }
+        ) {
             softCamService.takePhoto()
         }
-        imageAnalyzer = SoftCamImageAnalyzer(softCamFaceProcessor, this)
+        imageAnalyzer = SoftCamImageAnalyzer(softCamFaceProcessor, this) {
+            logErrorMessageAction(it)
+        }
         cameraExecutor = Executors.newSingleThreadExecutor()
         softCamService = SoftCamService(
             this,
@@ -92,7 +123,17 @@ internal class SoftCamActivity : AppCompatActivity(), SoftCamImageCaptureCallBac
             imageAnalyzer,
             captureBtn,
             this
-        )
+        ) {
+            logErrorMessageAction(it)
+        }
+
+        // Observe Error messages from CamService
+        lifecycleScope.launch {
+            errorMessageSharedFlow.collectLatest {
+                showErrorMessage(it)
+            }
+        }
+
         if (allPermissionsGranted()) {
             softCamService.startCamera(
                 SoftCamUseCase.PHOTO, SoftCamCameraType.FRONT
@@ -122,12 +163,22 @@ internal class SoftCamActivity : AppCompatActivity(), SoftCamImageCaptureCallBac
             captureBtn = imageCaptureButton
             switchCameraBtn = switchCameraIcon
             faceOverLay = faceBoxOverlay
+            infoLayout = info
+            infoTv = messageTv
         }
+    }
+
+    private suspend fun showErrorMessage(message: String) {
+        infoTv.text = message
+        infoLayout.slideUp()
+        delay(6000)
+        infoLayout.slideDown()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        coroutineScope.cancel()
     }
 
     override fun onSuccess(capturedImage: File?) {
@@ -173,6 +224,15 @@ internal class SoftCamActivity : AppCompatActivity(), SoftCamImageCaptureCallBac
         ) {
             val intent = Intent(context, SoftCamActivity::class.java)
             context.startActivityForResult(intent, requestCode)
+        }
+    }
+
+    private fun logErrorMessageAction(message: String) {
+        if (lastMessage != message) {
+            coroutineScope.launch {
+                _errorMessageSharedFlow.emit(message)
+                lastMessage = message
+            }
         }
     }
 }

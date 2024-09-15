@@ -8,11 +8,13 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.example.softcam.R
 import com.example.softcam.domain.contracts.SoftCamFaceProcessor
+import kotlinx.coroutines.CoroutineScope
 
 
 internal class SoftCamImageAnalyzer(
     private val softCamProcessor: SoftCamFaceProcessor,
-    private val context: Context
+    private val context: Context,
+    private val logErrorMessageAction: (message: String) -> Unit
 ) :
     ImageAnalysis.Analyzer {
     @OptIn(ExperimentalGetImage::class)
@@ -20,11 +22,9 @@ internal class SoftCamImageAnalyzer(
         if (image.image != null) {
             softCamProcessor.processImage(image)
         } else {
-            Toast.makeText(
-                context,
-                context.getString(R.string.no_face_detected),
-                Toast.LENGTH_LONG
-            ).show()
+            logErrorMessageAction.invoke(
+                context.getString(R.string.no_face_detected)
+            )
         }
     }
 }
